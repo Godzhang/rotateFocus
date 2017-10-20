@@ -1,82 +1,242 @@
 ;(function(){
-	var RotateFocus = function(options){
-		this.opt = Object.assign({}, options);
-		this.focus = this.opt.focus;
-		this.li = Array.prototype.slice.call(this.focus.getElementsByTagName('li'));
+	var RotateFocus = function(el, options){
+		this.default = {
+			prevClass: 'prev',
+			nextClass: 'next',
+			childTag: 'li',
+			scale: 0.9,
+			autoPlay: false,
+			verticalAlign: 'middle',
+			speed: 500,
+			interval: 4000,
+			isOpacity: true
+		};
+		this.opt = Object.assign({}, this.default, options);
+		this.focus = el;
+		this.li = Array.prototype.slice.call(this.focus.getElementsByTagName(this.opt.childTag));//获取所有子项的数组形式
 		this.len = this.li.length;
-		this.prev = this.opt.prev;
-		this.next = this.opt.next;
-		this.width = this.opt.width;
-		this.height = this.opt.height;
-		this.carrouselWidth = this.opt.carrouselWidth;
-		this.carrouselHeight = this.opt.carrouselHeight;
-		this.scale = this.opt.scale;
-		this.autoPlay = this.opt.autoPlay || false;
-		this.verticalAlign = this.opt.verticalAlign || 'middle';
-		this.index = 0;
-		this.rotateFlag = true;
+		this.prev = this.getByClass(this.focus, this.opt.prevClass);
+		this.next = this.getByClass(this.focus, this.opt.nextClass);
+		this.width = this.opt.width;  												//容器宽度
+		this.height = this.opt.height;												//容器高度
+		this.carrouselWidth = this.opt.carrouselWidth;								//首帧宽度
+		this.carrouselHeight = this.opt.carrouselHeight;							//首帧高度
+		this.scale = this.opt.scale;											    //缩放比例
+		this.autoPlay = this.opt.autoPlay;											//是否自动轮播
+		this.verticalAlign = this.opt.verticalAlign;								//图片对齐方式
+		this.isOpacity = this.opt.isOpacity;										//是否设置透明度
+		this.rotateFlag = true;														
+		this.speed = this.opt.speed;												//过渡时间ms
+		this.timer = null;
+		this.interval = this.opt.interval;											//自动轮播间隔
 		this.init();
-	}	
-	// RotateFocus.pos = 
+	}
 	RotateFocus.prototype = {
 		init: function(){
 			var self = this;
-
+			//设置容器宽高
 			this.focus.style.width = this.width + "px";
 			this.focus.style.height = this.height + "px";
-
+			//设置第一帧
 			this.setFirstFrame();
+			//设置其他帧
 			this.setOtherFrame();
+			//左右点击事件
+			// this.prev.onclick = function(){
+			// 	if(self.rotateFlag){
+			// 		self.rotateFlag = false;
+			// 		self.rotateAnimate('left');
+			// 	}
+			// }
+			// this.next.onclick = function(){
+			// 	if(self.rotateFlag){
+			// 		self.rotateFlag = false;
+			// 		self.rotateAnimate('right');
+			// 	}
+			// }
+			this.focus.addEventListener("click", function(event){
+				var target = event.target;
+				if(target.className.indexOf(self.opt.prevClass) > -1){
+					if(self.rotateFlag){
+						self.rotateFlag = false;
+						self.rotateAnimate('left');
+					}
+				}
+				if(target.className.indexOf(self.opt.nextClass) > -1){
+					if(self.rotateFlag){
+						self.rotateFlag = false;
+						self.rotateAnimate('right');
+					}
+				}
+				// if(target.nodeName.toLowerCase() === 'img'){
+				// 	var li = target.parentNode;
+				// }
+			});
+			//自动轮播
+			if(this.autoPlay){
+				this.timer = setInterval(function(){
+					self.next.onclick();
+				}, this.interval);
+				this.focus.onmouseenter = function(){
+					clearInterval(self.timer);
+				}
+				this.prev.onmouseenter = function(){
+					clearInterval(self.timer);
+				}
+				this.next.onmouseenter = function(){
+					clearInterval(self.timer);
+				}
+				this.focus.onmouseleave = function(){
+					self.timer = setInterval(function(){
+						self.next.onclick();
+					}, self.interval);
+				}
+				this.prev.onmouseleave = function(){
+					self.timer = setInterval(function(){
+						self.next.onclick();
+					}, self.interval);
+				}
+				this.next.onmouseleave = function(){
+					self.timer = setInterval(function(){
+						self.next.onclick();
+					}, self.interval);
+				}
+			}
 
-			this.prev.onclick = function(){
-				if(self.rotateFlag){
-					self.rotateFlag = false;
-					self.rotateAnimate('left');
-				}
-			}
-			this.next.onclick = function(){
-				if(self.rotateFlag){
-					self.rotateFlag = false;
-					self.rotateAnimate('right');
-				}
-			}
 		},
 		rotateAnimate: function(dir){
 			var self = this;
-			var arr = [];
 			if(dir === 'left'){
-				
-			}
-			if(dir === 'right'){
+				var zIndexArr = [];
 				this.li.forEach(function(cur, index){
-					var suo = index === self.len - 1 ? 0 : ++index,
-						width = self.li[suo].offsetWidth,
-						height = self.li[suo].offsetHeight,
-						top = self.li[suo].offsetTop,
-						left = self.li[suo].offsetLeft,
-						zIndex = self.li[suo].style.zIndex;
+					var nextLi = self.li[++index] ? self.li[index] : self.li[0],
+						width = nextLi.offsetWidth,
+						height = nextLi.offsetHeight,
+						top = nextLi.offsetTop,
+						left = nextLi.offsetLeft;
 
-					if(suo === 0){
-						width = self.carrouselWidth;
-						height = self.carrouselHeight;
-						top = 0;
-						left = (self.width - self.carrouselWidth) / 2;
-						zIndex = 1000;
-					}
+					zIndexArr.push({zIndex: nextLi.style.zIndex, opacity: nextLi.style.opacity});
+
 					cur.style.width = width + "px";
 					cur.style.height = height + "px";
 					cur.style.top = top + "px";
 					cur.style.left = left + "px";
-					cur.style.zIndex = zIndex;
-					self.rotateFlag = true;
+					var timer = setTimeout(function(){
+						self.rotateFlag = true;
+						clearTimeout(timer);
+					},self.speed);
 				});
+
+				this.li.forEach(function(val, index){
+					val.style.zIndex = zIndexArr[index].zIndex;
+					if(self.isOpacity){
+						val.style.opacity = zIndexArr[index].opacity;
+					}					
+				})
+			}
+			if(dir === 'right'){
+				var zIndexArr = [];
+				this.li.forEach(function(cur, index){
+					var prevLi = self.li[--index] ? self.li[index] : self.li[self.len-1],
+						width = prevLi.offsetWidth,
+						height = prevLi.offsetHeight,
+						top = prevLi.offsetTop,
+						left = prevLi.offsetLeft;
+
+					zIndexArr.push({zIndex: prevLi.style.zIndex, opacity: prevLi.style.opacity});
+					if(index !== 0) return;
+					self.animate(cur, {
+						// width: width,
+						// height: height,
+						// top: top,
+						left: left
+					}, function(){
+						self.rotateFlag = true;
+					});
+					// cur.style.width = width + "px";
+					// cur.style.height = height + "px";
+					// cur.style.top = top + "px";
+					// cur.style.left = left + "px";
+					// var timer = setTimeout(function(){
+					// 	self.rotateFlag = true;
+					// 	clearTimeout(timer);
+					// },self.speed);
+				});
+
+				this.li.forEach(function(val, index){
+					val.style.zIndex = zIndexArr[index].zIndex;
+					if(self.isOpacity){
+						val.style.opacity = zIndexArr[index].opacity;
+					}
+				})
 			}
 		},
+		animate: function(elem, json, fn){
+			var self = this;
+
+			clearInterval(elem.timer);
+			elem.timer = setInterval(function(){
+				var flag = true;
+				for(var k in json){
+					var start = parseInt(self.getStyle(elem, k)) || 0,
+						end = json[k],
+						step = (end - start) / 10;
+
+					step = step > 0 ? Math.ceil(step) : Math.floor(step);
+					// console.log("start: " + start)
+					// console.log("step: " + step)
+					start = start + step;
+					// console.log("endStart: " + start);
+					elem.style[k] = start + "px";
+					if(start != end){
+						flag = false;
+					}
+				}
+				if(flag){
+					clearInterval(elem.timer);
+					fn && fn();
+				}
+			}, 17);
+		},
+		// animate: function(elem, json, fn){
+		// 	var self = this;
+
+		// 	clearInterval(elem.timer);
+		// 	elem.timer = setInterval(function(){
+		// 		var flag = true;
+		// 		for(var k in json){
+		// 			if(k === 'opacity'){
+		// 				var start = self.getStyle(elem, k) * 100,
+		// 					end = json[k] * 100,
+		// 					step = (end - start) / 10;
+		// 				step = step > 0 ? Math.ceil(step) : Math.floor(step);
+		// 				start += step;
+		// 				elem.style[k] = start / 100;
+		// 			}else if(k === 'zIndex'){
+		// 				elem.style.zIndex = json[k];
+		// 			}else{
+		// 				var start = parseInt(self.getStyle(elem, k)) || 0,
+		// 					end = json[k],
+		// 					step = (end - start) / 10;
+		// 				step = step > 0 ? Math.ceil(step) : Math.floor(step);
+		// 				start = start + step;
+		// 				elem.style[k] = start + "px";
+		// 			}
+		// 			if(start != end){
+		// 				flag = false;
+		// 			}
+		// 		}
+		// 		if(flag){
+		// 			clearInterval(elem.timer);
+		// 			fn && fn();
+		// 		}
+		// 	}, 17);
+		// },
 		setFirstFrame: function(){
 			var self = this;
 			var firstFrame = this.li[0];
 
-			firstFrame.style.zIndex = 1000;
+			firstFrame.style.zIndex = Math.floor(this.len / 2);
 			firstFrame.style.width = this.carrouselWidth + "px";
 			firstFrame.style.height = this.carrouselHeight + "px";
 			firstFrame.style.top = (this.height - this.carrouselHeight) / 2 + "px";
@@ -86,61 +246,82 @@
 			var self = this;
 
 			var items = this.li.slice(1),
-				level = Math.floor(this.li.length/2),
-				leftItem = items.slice(0, level),
-				rightItem = items.slice(level),
-				btnWidth = (this.width - this.carrouselWidth) / 2,
-				gap = btnWidth / level;
-			//设置左面
-			var i = 1;
-			var leftWidth = self.carrouselWidth;
-			var leftHeight = self.carrouselHeight;
-			var zLoop1 = level;
-			leftItem.forEach(function(val, index){
-				leftWidth = leftWidth * self.scale;
-				leftHeight = leftHeight * self.scale;
-
-				val.style.width = leftWidth + "px";
-				val.style.height = leftHeight + "px";
-				val.style.top = (self.height - leftHeight) / 2 + "px";
-				val.style.left = btnWidth - gap * i + "px";
-				val.style.zIndex = zLoop1--;
-				i++;
-			});
+				level = Math.floor(this.len/2),
+				rightItem = items.slice(0, level),
+				leftItem = items.slice(level),
+				sideWidth = (this.width - this.carrouselWidth) / 2,
+				gap = sideWidth / level;
 			//设置右面
-			var j = level;
-			var rightWidth = leftWidth * this.scale;
-			var rightHeight = leftHeight * this.scale;
-			var zLoop2 = 1;
+			var i = 1;
+			var rightWidth = this.carrouselWidth;
+			var rightHeight = this.carrouselHeight;
+			var zLoop1 = level;
 			rightItem.forEach(function(val, index){
-				rightWidth = rightWidth / self.scale;
-				rightHeight = rightHeight / self.scale;
+				rightWidth = rightWidth * self.scale;
+				rightHeight = rightHeight * self.scale;
 
 				val.style.width = rightWidth + "px";
 				val.style.height = rightHeight + "px";
-				val.style.top = (self.height - rightHeight) / 2 + "px";
-				val.style.left = btnWidth + self.carrouselWidth + j * gap - rightWidth + "px";
-				val.style.zIndex = zLoop1++;
-				j--;
+				val.style.top = self.setVertical(rightHeight);
+				val.style.left = sideWidth + self.carrouselWidth + i * gap - rightWidth + "px";
+				val.style.zIndex = --zLoop1;
+				if(self.isOpacity){
+					val.style.opacity = 1 / i;
+				}				
+				i++;
 			});
+			//设置左面
+			var j = level;
+			var leftWidth = rightWidth;
+			var leftHeight = rightHeight;
+			var zLoop2 = zLoop1;
+			leftItem.forEach(function(val, index){
+				val.style.width = leftWidth + "px";
+				val.style.height = leftHeight + "px";
+				val.style.top = self.setVertical(leftHeight);
+				val.style.left = index * gap + "px";
+				val.style.zIndex = zLoop2++;
+				if(self.isOpacity){
+					val.style.opacity = 1 / j;
+				}				
+				j--;
+				leftWidth = leftWidth / self.scale;
+				leftHeight = leftHeight / self.scale;
+			});
+		},
+		setVertical: function(ver){
+			if(this.verticalAlign === 'top'){
+				return 0 + "px";
+			}else if(this.verticalAlign === 'bottom'){
+				return this.height - ver + "px";
+			}else{
+				return (this.height - ver) / 2 + "px";
+			}
+		},
+		getByClass: function(box, className){
+			var self = this;
+			var all = box.getElementsByTagName('*'),
+				reg = new RegExp("(^|\\s+)" + className + "(\\s+|$)");
+
+			for(var i = 0, len = all.length; i < len; i++){
+				if(reg.test(all[i].className)){
+					return all[i];
+				}
+			}
+		},
+		getStyle: function(elem, attr){
+			if(window.getComputedStyle){
+				return window.getComputedStyle(elem)[attr];
+			}else{
+				return obj.currentStyle[attr];
+			}
 		}
-		
+	}
 
-
-
-
-
-
+	var rotate = function(el, options){
+		new RotateFocus(el, options);
 	}
 
 
-
-
-
-
-
-
-
-
-	window.RotateFocus = RotateFocus;
+	window.rotate = rotate;
 })();
