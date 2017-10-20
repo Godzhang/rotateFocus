@@ -29,6 +29,7 @@
 		this.speed = this.opt.speed;												//过渡时间ms
 		this.timer = null;
 		this.interval = this.opt.interval;											//自动轮播间隔
+		this.count = 0;
 		this.init();
 	}
 	RotateFocus.prototype = {
@@ -117,14 +118,23 @@
 
 					zIndexArr.push({zIndex: nextLi.style.zIndex, opacity: nextLi.style.opacity});
 
-					cur.style.width = width + "px";
-					cur.style.height = height + "px";
-					cur.style.top = top + "px";
-					cur.style.left = left + "px";
-					var timer = setTimeout(function(){
+					self.animate(cur, {
+						width: width,
+						height: height,
+						top: top,
+						left: left
+					}, function(){
 						self.rotateFlag = true;
-						clearTimeout(timer);
-					},self.speed);
+					});
+
+					// cur.style.width = width + "px";
+					// cur.style.height = height + "px";
+					// cur.style.top = top + "px";
+					// cur.style.left = left + "px";
+					// var timer = setTimeout(function(){
+					// 	self.rotateFlag = true;
+					// 	clearTimeout(timer);
+					// },self.speed);
 				});
 
 				this.li.forEach(function(val, index){
@@ -144,11 +154,10 @@
 						left = prevLi.offsetLeft;
 
 					zIndexArr.push({zIndex: prevLi.style.zIndex, opacity: prevLi.style.opacity});
-					if(index !== 0) return;
 					self.animate(cur, {
-						// width: width,
-						// height: height,
-						// top: top,
+						width: width,
+						height: height,
+						top: top,
 						left: left
 					}, function(){
 						self.rotateFlag = true;
@@ -178,60 +187,37 @@
 			elem.timer = setInterval(function(){
 				var flag = true;
 				for(var k in json){
-					var start = parseInt(self.getStyle(elem, k)) || 0,
-						end = json[k],
-						step = (end - start) / 10;
-
-					step = step > 0 ? Math.ceil(step) : Math.floor(step);
-					// console.log("start: " + start)
-					// console.log("step: " + step)
-					start = start + step;
-					// console.log("endStart: " + start);
-					elem.style[k] = start + "px";
+					if(k === 'opacity'){
+						var start = self.getStyle(elem, k) * 100,
+							end = json[k] * 100,
+							step = (end - start) / 10;
+						step = step > 0 ? Math.ceil(step) : Math.floor(step);
+						start += step;
+						elem.style[k] = start / 100;
+					}else if(k === 'zIndex'){
+						elem.style.zIndex = json[k];
+					}else{
+						var start = parseInt(self.getStyle(elem, k)) || 0,
+							end = json[k],
+							step = (end - start) / 10;
+						step = step > 0 ? Math.ceil(step) : Math.floor(step);
+						start = start + step;
+						elem.style[k] = start + "px";
+					}
 					if(start != end){
 						flag = false;
 					}
 				}
 				if(flag){
+					self.count++;
 					clearInterval(elem.timer);
-					fn && fn();
+					if(fn && self.count === self.len){
+						fn();
+						self.count = 0;
+					}
 				}
 			}, 17);
 		},
-		// animate: function(elem, json, fn){
-		// 	var self = this;
-
-		// 	clearInterval(elem.timer);
-		// 	elem.timer = setInterval(function(){
-		// 		var flag = true;
-		// 		for(var k in json){
-		// 			if(k === 'opacity'){
-		// 				var start = self.getStyle(elem, k) * 100,
-		// 					end = json[k] * 100,
-		// 					step = (end - start) / 10;
-		// 				step = step > 0 ? Math.ceil(step) : Math.floor(step);
-		// 				start += step;
-		// 				elem.style[k] = start / 100;
-		// 			}else if(k === 'zIndex'){
-		// 				elem.style.zIndex = json[k];
-		// 			}else{
-		// 				var start = parseInt(self.getStyle(elem, k)) || 0,
-		// 					end = json[k],
-		// 					step = (end - start) / 10;
-		// 				step = step > 0 ? Math.ceil(step) : Math.floor(step);
-		// 				start = start + step;
-		// 				elem.style[k] = start + "px";
-		// 			}
-		// 			if(start != end){
-		// 				flag = false;
-		// 			}
-		// 		}
-		// 		if(flag){
-		// 			clearInterval(elem.timer);
-		// 			fn && fn();
-		// 		}
-		// 	}, 17);
-		// },
 		setFirstFrame: function(){
 			var self = this;
 			var firstFrame = this.li[0];
