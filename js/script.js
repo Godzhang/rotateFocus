@@ -30,6 +30,7 @@
 		this.timer = null;
 		this.interval = this.opt.interval;											//自动轮播间隔
 		this.count = 0;
+		this.list = this.li.slice();
 		this.init();
 	}
 	RotateFocus.prototype = {
@@ -43,36 +44,18 @@
 			//设置其他帧
 			this.setOtherFrame();
 			//左右点击事件
-			// this.prev.onclick = function(){
-			// 	if(self.rotateFlag){
-			// 		self.rotateFlag = false;
-			// 		self.rotateAnimate('left');
-			// 	}
-			// }
-			// this.next.onclick = function(){
-			// 	if(self.rotateFlag){
-			// 		self.rotateFlag = false;
-			// 		self.rotateAnimate('right');
-			// 	}
-			// }
-			this.focus.addEventListener("click", function(event){
-				var target = event.target;
-				if(target.className.indexOf(self.opt.prevClass) > -1){
-					if(self.rotateFlag){
-						self.rotateFlag = false;
-						self.rotateAnimate('left');
-					}
+			this.prev.onclick = function(){
+				if(self.rotateFlag){
+					self.rotateFlag = false;
+					self.rotateAnimate('left');
 				}
-				if(target.className.indexOf(self.opt.nextClass) > -1){
-					if(self.rotateFlag){
-						self.rotateFlag = false;
-						self.rotateAnimate('right');
-					}
+			}
+			this.next.onclick = function(){
+				if(self.rotateFlag){
+					self.rotateFlag = false;
+					self.rotateAnimate('right');
 				}
-				// if(target.nodeName.toLowerCase() === 'img'){
-				// 	var li = target.parentNode;
-				// }
-			});
+			}
 			//自动轮播
 			if(this.autoPlay){
 				this.timer = setInterval(function(){
@@ -124,17 +107,9 @@
 						top: top,
 						left: left
 					}, function(){
+						self.list.unshift(self.list.pop());
 						self.rotateFlag = true;
 					});
-
-					// cur.style.width = width + "px";
-					// cur.style.height = height + "px";
-					// cur.style.top = top + "px";
-					// cur.style.left = left + "px";
-					// var timer = setTimeout(function(){
-					// 	self.rotateFlag = true;
-					// 	clearTimeout(timer);
-					// },self.speed);
 				});
 
 				this.li.forEach(function(val, index){
@@ -160,16 +135,9 @@
 						top: top,
 						left: left
 					}, function(){
+						self.list.push(self.list.shift());
 						self.rotateFlag = true;
 					});
-					// cur.style.width = width + "px";
-					// cur.style.height = height + "px";
-					// cur.style.top = top + "px";
-					// cur.style.left = left + "px";
-					// var timer = setTimeout(function(){
-					// 	self.rotateFlag = true;
-					// 	clearTimeout(timer);
-					// },self.speed);
 				});
 
 				this.li.forEach(function(val, index){
@@ -190,7 +158,7 @@
 					if(k === 'opacity'){
 						var start = self.getStyle(elem, k) * 100,
 							end = json[k] * 100,
-							step = (end - start) / 10;
+							step = (end - start) / 5;
 						step = step > 0 ? Math.ceil(step) : Math.floor(step);
 						start += step;
 						elem.style[k] = start / 100;
@@ -199,7 +167,7 @@
 					}else{
 						var start = parseInt(self.getStyle(elem, k)) || 0,
 							end = json[k],
-							step = (end - start) / 10;
+							step = (end - start) / 5;
 						step = step > 0 ? Math.ceil(step) : Math.floor(step);
 						start = start + step;
 						elem.style[k] = start + "px";
