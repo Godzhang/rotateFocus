@@ -155,25 +155,24 @@
 			elem.timer = setInterval(function(){
 				var flag = true;
 				for(var k in json){
+					var start, end, step;
 					if(k === 'opacity'){
-						var start = self.getStyle(elem, k) * 100,
-							end = json[k] * 100,
-							step = (end - start) / 5;
-						step = step > 0 ? Math.ceil(step) : Math.floor(step);
-						start += step;
-						elem.style[k] = start / 100;
-					}else if(k === 'zIndex'){
-						elem.style.zIndex = json[k];
+						start = self.getStyle(elem, k) * 100;
+						end = json[k] * 100;						
 					}else{
-						var start = parseInt(self.getStyle(elem, k)) || 0,
-							end = json[k],
-							step = (end - start) / 5;
-						step = step > 0 ? Math.ceil(step) : Math.floor(step);
-						start = start + step;
-						elem.style[k] = start + "px";
+						start = parseInt(self.getStyle(elem, k)) || 0;
+						end = json[k];
 					}
-					if(start != end){
+					step = (end - start) / 5;
+					step = step > 0 ? Math.ceil(step) : Math.floor(step);
+					
+					if(start !== end){
 						flag = false;
+					}
+					if(k === 'opacity'){
+						elem.style[k] = (start + step) / 100;
+					}else{
+						elem.style[k] = (start + step) + "px";
 					}
 				}
 				if(flag){
